@@ -18,7 +18,7 @@ def main():
             repository.search()
             repository.setNonstop()
             repository.loadMonthsNumbers()
-            print(repository.findLowestFromMonth(9))
+            print(repository.findLowestFromMonth(month=9, exclude=["Saturday", 28]))
             browser.close()
     pass
 main()

@@ -56,7 +56,7 @@ class Repository():
             time.sleep(0.2)
 
     
-    def findLowestFromMonth(self, month, days=[]):
+    def findLowestFromMonth(self, *, month, include=[], exclude=[]):
         self.reachMonth(month)
         time.sleep(1)
         trys=1
@@ -73,10 +73,13 @@ class Repository():
             gridcells = row.get_by_role("gridcell")
             for x in range(0, gridcells.count()):
                 gridcell = gridcells.nth(x)
-                if len(days) > 0:
-                    dateDiv = gridcell.locator(f"[aria-label*='{self._monthsNames[month-1]}']")
-                    dateArray = [item.strip() for item in dateDiv.get_attribute('aria-label').replace(',', '').split()]
-                    if(not (dateArray[0] in days or int(dateArray[2]) in days)):
+                dateDiv = gridcell.locator(f"[aria-label*='{self._monthsNames[month-1]}']")
+                dateArray = [item.strip() for item in dateDiv.get_attribute('aria-label').replace(',', '').split()]
+                if len(exclude) > 0:
+                    if(dateArray[0] in exclude or int(dateArray[2]) in exclude):
+                        continue
+                if len(include) > 0:
+                    if(not (dateArray[0] in include or int(dateArray[2]) in include)):
                         continue
                 pricesDiv = gridcell.locator("[aria-label$='US dollars']")
                 for y in range(0, pricesDiv.count()):
