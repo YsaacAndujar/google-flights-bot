@@ -83,13 +83,8 @@ class Repository():
                     priceDiv = pricesDiv.nth(y)
                     price=int(priceDiv.inner_text().replace('$', ''))
                     prices.append(price)
-        return min(prices)
-        # # Itera sobre cada elemento y encuentra el primer <div> dentro
-        # for i in range(rowgroups.count()):
-        #     # Selecciona el elemento actual
-        #     rowgroup = rowgroups.nth(i)
-        #     firstDiv = rowgroup.locator("div").nth(0)
-        #     print(firstDiv.inner_text())
+        return min(prices) if len(prices) > 0 else None
+
     
     def loadMonthsNumbers(self):
         self.getCalendarInput().click()
