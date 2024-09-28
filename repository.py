@@ -1,5 +1,5 @@
 import time
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Request, Response
 import datetime
 
 class Repository():
@@ -7,8 +7,15 @@ class Repository():
     page:Page
     maxCalendarMonthReached = 2
     monthsNumbers=[]
+    _monthsNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    _callingCalendarApi = 0
     def __init__(self, page:Page):
         self.page = page
+        page.on('request', self._onRequest)
+        page.on('response', self._onResponse)
         page.goto(self.url)
         page.get_by_label('Round trip').nth(0).click()
         time.sleep(1)
@@ -18,6 +25,14 @@ class Repository():
         time.sleep(0.5)
         page.keyboard.press("ArrowRight")
         page.keyboard.press("Enter")
+
+    def _onRequest(self, request:Request):
+        if(request.method == "POST" and "getcalendarpicker" in request.url.lower()):
+            self._callingCalendarApi += 1
+
+    def _onResponse(self, response:Response):
+        if(response.request.method == "POST" and "getcalendarpicker" in response.request.url.lower()):
+            self._callingCalendarApi -= 1
 
     def getInputAirport(self, isArrival=True):
         labelText = 'Where to' if isArrival == True else 'Where from'
@@ -41,18 +56,34 @@ class Repository():
             time.sleep(0.2)
 
     
-    def findLowestFromMonth(self, month):
+    def findLowestFromMonth(self, month, days=[]):
         self.reachMonth(month)
-        time.sleep(0.5)
+        time.sleep(1)
+        trys=1
+        while self._callingCalendarApi > 0:
+            time.sleep(1)
+            if trys> 20:
+                raise TimeoutError("Calendar api timeout")
+            
         rowgroups = self.page.get_by_role("rowgroup")
         rows = rowgroups.nth(self.monthsNumbers.index(month)).get_by_role('row')
-        gridcells = rows.get_by_role("gridcell")
-        pricesDiv = gridcells.locator("[aria-label$='US dollars']")
-        time.sleep(10)
-        print(pricesDiv.count())
-        for i in range(0, pricesDiv.count()-1):
-            priceDiv = pricesDiv.nth(i)
-            print(priceDiv.inner_text())
+        prices=[]
+        for i in range(0, rows.count()):
+            row = rows.nth(i)
+            gridcells = row.get_by_role("gridcell")
+            for x in range(0, gridcells.count()):
+                gridcell = gridcells.nth(x)
+                if len(days) > 0:
+                    dateDiv = gridcell.locator(f"[aria-label*='{self._monthsNames[month-1]}']")
+                    dateArray = [item.strip() for item in dateDiv.get_attribute('aria-label').replace(',', '').split()]
+                    if(not (dateArray[0] in days or int(dateArray[2]) in days)):
+                        continue
+                pricesDiv = gridcell.locator("[aria-label$='US dollars']")
+                for y in range(0, pricesDiv.count()):
+                    priceDiv = pricesDiv.nth(y)
+                    price=int(priceDiv.inner_text().replace('$', ''))
+                    prices.append(price)
+        return min(prices)
         # # Itera sobre cada elemento y encuentra el primer <div> dentro
         # for i in range(rowgroups.count()):
         #     # Selecciona el elemento actual

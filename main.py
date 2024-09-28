@@ -18,8 +18,8 @@ def main():
             repository.search()
             repository.setNonstop()
             repository.loadMonthsNumbers()
-            repository.findLowestFromMonth(11)
-            input("Presiona Enter para cerrar el navegador...")
+            print(repository.findLowestFromMonth(9, ["Saturday", 30]))
+            input('a')
             browser.close()
     pass
 main()
